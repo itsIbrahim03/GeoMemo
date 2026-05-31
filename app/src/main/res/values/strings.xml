@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">GeoMemo</string>
+    <string name="splash_tagline">Your memories, pinned to the map</string>
 </resources>

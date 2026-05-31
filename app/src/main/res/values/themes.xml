@@ -6,4 +6,11 @@
     </style>
 
     <style name="Theme.GeoMemo" parent="Base.Theme.GeoMemo" />
+
+    <!-- Splash screen theme -->
+    <style name="Theme.GeoMemo.Splash" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="android:statusBarColor">@color/splash_background</item>
+        <item name="android:navigationBarColor">@color/splash_background</item>
+    </style>
 </resources>

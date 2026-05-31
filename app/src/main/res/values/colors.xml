@@ -2,4 +2,6 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="splash_background">#C1563A</color>
+    <color name="splash_tagline_color">#E8C4A8</color>
 </resources>
