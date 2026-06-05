@@ -32,6 +32,15 @@ public class MemoDBHelper extends SQLiteOpenHelper {
                     COLUMN_CREATED_AT + " TEXT" +
                     ");";
 
+    private static MemoDBHelper instance;
+
+    public static synchronized MemoDBHelper getInstance(Context context) {
+        if (instance == null) {
+            instance = new MemoDBHelper(context.getApplicationContext());
+        }
+        return instance;
+    }
+
     public MemoDBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -55,9 +64,7 @@ public class MemoDBHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LATITUDE, memo.getLatitude());
         values.put(COLUMN_LONGITUDE, memo.getLongitude());
         values.put(COLUMN_CREATED_AT, memo.getCreatedAt());
-        long id = db.insert(TABLE_MEMOS, null, values);
-        db.close();
-        return id;
+        return db.insert(TABLE_MEMOS, null, values);
     }
 
     public List<Memo> getAllMemos() {
@@ -95,16 +102,13 @@ public class MemoDBHelper extends SQLiteOpenHelper {
         } finally {
             cursor.close();
         }
-        db.close();
         return memos;
     }
 
     public int deleteMemo(long id) {
         SQLiteDatabase db = getWritableDatabase();
-        int rowsAffected = db.delete(TABLE_MEMOS, COLUMN_ID + " = ?",
+        return db.delete(TABLE_MEMOS, COLUMN_ID + " = ?",
                 new String[]{String.valueOf(id)});
-        db.close();
-        return rowsAffected;
     }
 
     public int updateMemo(Memo memo) {
@@ -115,10 +119,8 @@ public class MemoDBHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LATITUDE, memo.getLatitude());
         values.put(COLUMN_LONGITUDE, memo.getLongitude());
         values.put(COLUMN_CREATED_AT, memo.getCreatedAt());
-        int rowsAffected = db.update(TABLE_MEMOS, values, COLUMN_ID + " = ?",
+        return db.update(TABLE_MEMOS, values, COLUMN_ID + " = ?",
                 new String[]{String.valueOf(memo.getId())});
-        db.close();
-        return rowsAffected;
     }
 
     public Memo getMemoById(long id) {
@@ -146,7 +148,6 @@ public class MemoDBHelper extends SQLiteOpenHelper {
         } finally {
             cursor.close();
         }
-        db.close();
         return memo;
     }
 }

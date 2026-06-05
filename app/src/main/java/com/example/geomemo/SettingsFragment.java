@@ -106,6 +106,14 @@ public class SettingsFragment extends Fragment {
         // Switch listener
         switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
             prefs.edit().putBoolean(KEY_NOTIFICATIONS_ENABLED, isChecked).apply();
+            
+            android.content.Intent serviceIntent = new android.content.Intent(requireContext(), LocationService.class);
+            if (isChecked && androidx.core.content.ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) 
+                    == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                androidx.core.content.ContextCompat.startForegroundService(requireContext(), serviceIntent);
+            } else {
+                requireContext().stopService(serviceIntent);
+            }
         });
 
         return view;

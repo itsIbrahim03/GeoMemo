@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         // Initialize database helper
-        dbHelper = new MemoDBHelper(this);
+        dbHelper = MemoDBHelper.getInstance(this);
 
         // Restore state or set default
         if (savedInstanceState != null) {
@@ -94,14 +94,23 @@ public class MainActivity extends AppCompatActivity
             }
         }
 
-        // Request location permissions
+        // Request permissions (Location and Notifications for Android 13+)
+        java.util.List<String> permissionsNeeded = new java.util.ArrayList<>();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            permissionsNeeded.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (ContextCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS")
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add("android.permission.POST_NOTIFICATIONS");
+            }
+        }
+
+        if (!permissionsNeeded.isEmpty()) {
             ActivityCompat.requestPermissions(this,
-                    new String[]{
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                    },
+                    permissionsNeeded.toArray(new String[0]),
                     LOCATION_PERMISSION_REQUEST);
         } else {
             startLocationServiceIfNeeded();
@@ -196,7 +205,11 @@ public class MainActivity extends AppCompatActivity
         double longitude = memo.getLongitude();
         new Thread(() -> {
             String address = getAddressFromLocation(latitude, longitude);
-            runOnUiThread(() -> dialogCoordinates.setText("Location: " + address));
+            runOnUiThread(() -> {
+                if (!isFinishing() && !isDestroyed()) {
+                    dialogCoordinates.setText("Location: " + address);
+                }
+            });
         }).start();
 
         // Setup Map inside dialog with OSMDroid
@@ -335,9 +348,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (dbHelper != null) {
-            dbHelper.close();
-        }
     }
 
     private String getAddressFromLocation(double latitude, double longitude) {

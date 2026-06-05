@@ -20,6 +20,8 @@ import androidx.core.view.WindowInsetsCompat;
 public class SplashActivity extends AppCompatActivity {
 
     private static final int SPLASH_DURATION = 3750;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable navigateRunnable;
 
     @SuppressWarnings("deprecation")
     @Override
@@ -100,7 +102,7 @@ public class SplashActivity extends AppCompatActivity {
         });
 
         // Navigate to MainActivity
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        navigateRunnable = () -> {
             Intent intent = new Intent(SplashActivity.this, MainActivity.class);
             startActivity(intent);
             if (Build.VERSION.SDK_INT >= 34) {
@@ -109,6 +111,15 @@ public class SplashActivity extends AppCompatActivity {
                 overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
             }
             finish();
-        }, SPLASH_DURATION);
+        };
+        handler.postDelayed(navigateRunnable, SPLASH_DURATION);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (handler != null && navigateRunnable != null) {
+            handler.removeCallbacks(navigateRunnable);
+        }
     }
 }

@@ -67,7 +67,7 @@ public class NotesFragment extends Fragment {
         btnClearSearchMemos = view.findViewById(R.id.btn_clear_search_memos);
         spinnerSortMemos = view.findViewById(R.id.spinner_sort_memos);
 
-        dbHelper = new MemoDBHelper(requireContext());
+        dbHelper = MemoDBHelper.getInstance(requireContext());
 
         // Setup RecyclerView
         memoList = new ArrayList<>();
@@ -139,7 +139,7 @@ public class NotesFragment extends Fragment {
                 for (String provider : providers) {
                     Location l = lm.getLastKnownLocation(provider);
                     if (l != null) {
-                        if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
+                        if (bestLocation == null || l.getTime() > bestLocation.getTime()) {
                             bestLocation = l;
                         }
                     }
@@ -249,8 +249,5 @@ public class NotesFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (dbHelper != null) {
-            dbHelper.close();
-        }
     }
 }

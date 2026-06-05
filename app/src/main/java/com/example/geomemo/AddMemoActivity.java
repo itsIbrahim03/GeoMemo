@@ -79,7 +79,7 @@ public class AddMemoActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btn_save_memo);
 
         // Initialize database helper
-        dbHelper = new MemoDBHelper(this);
+        dbHelper = MemoDBHelper.getInstance(this);
 
         // Get coordinates from intent extras
         Intent intent = getIntent();
@@ -172,7 +172,11 @@ public class AddMemoActivity extends AppCompatActivity {
         textSelectedLocation.setText("Loading location...");
         new Thread(() -> {
             String address = getAddressFromLocation(lat, lng);
-            runOnUiThread(() -> textSelectedLocation.setText(address));
+            runOnUiThread(() -> {
+                if (!isFinishing() && !isDestroyed()) {
+                    textSelectedLocation.setText(address);
+                }
+            });
         }).start();
     }
 
@@ -224,7 +228,9 @@ public class AddMemoActivity extends AppCompatActivity {
         dialogMapView.setMultiTouchControls(true);
         dialogMapView.setTileSource(TileSourceFactory.MAPNIK);
 
-        GeoPoint startPoint = new GeoPoint(tempLat[0], tempLng[0]);
+        double startLat = Double.isNaN(tempLat[0]) ? 31.7683 : tempLat[0];
+        double startLng = Double.isNaN(tempLng[0]) ? 35.2137 : tempLng[0];
+        GeoPoint startPoint = new GeoPoint(startLat, startLng);
         dialogMapView.getController().setZoom(16.0);
         dialogMapView.getController().setCenter(startPoint);
 
@@ -339,7 +345,7 @@ public class AddMemoActivity extends AppCompatActivity {
                             if (searchResult == null) {
                                 try {
                                     if (Geocoder.isPresent()) {
-                                        Geocoder geocoder = new Geocoder(AddMemoActivity.this, Locale.ENGLISH);
+                                        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.ENGLISH);
                                         List<Address> addresses = geocoder.getFromLocationName(query, 1);
                                         if (addresses != null && !addresses.isEmpty()) {
                                             Address address = addresses.get(0);
@@ -354,14 +360,16 @@ public class AddMemoActivity extends AppCompatActivity {
                             // 3. Process search result on Main Thread
                             final GeoPoint finalResult = searchResult;
                             runOnUiThread(() -> {
-                                if (finalResult != null && markerRef[0] != null) {
-                                    tempLat[0] = finalResult.getLatitude();
-                                    tempLng[0] = finalResult.getLongitude();
-                                    markerRef[0].setPosition(finalResult);
-                                    dialogMapView.getController().animateTo(finalResult, 16.0, null);
-                                    dialogMapView.invalidate();
-                                } else {
-                                    Toast.makeText(AddMemoActivity.this, "Location not found", Toast.LENGTH_SHORT).show();
+                                if (!isFinishing() && !isDestroyed()) {
+                                    if (finalResult != null && markerRef[0] != null) {
+                                        tempLat[0] = finalResult.getLatitude();
+                                        tempLng[0] = finalResult.getLongitude();
+                                        markerRef[0].setPosition(finalResult);
+                                        dialogMapView.getController().animateTo(finalResult, 16.0, null);
+                                        dialogMapView.invalidate();
+                                    } else {
+                                        Toast.makeText(AddMemoActivity.this, "Location not found", Toast.LENGTH_SHORT).show();
+                                    }
                                 }
                             });
                         }).start();
@@ -412,8 +420,5 @@ public class AddMemoActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (dbHelper != null) {
-            dbHelper.close();
-        }
     }
 }

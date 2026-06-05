@@ -61,6 +61,7 @@ public class MapFragment extends Fragment {
 
     private EditText editSearchMap;
     private ImageButton btnClearSearch;
+    private android.location.LocationListener activeLocationListener;
 
     @Nullable
     @Override
@@ -76,7 +77,7 @@ public class MapFragment extends Fragment {
         editSearchMap = view.findViewById(R.id.edit_search_map);
         btnClearSearch = view.findViewById(R.id.btn_clear_search);
 
-        dbHelper = new MemoDBHelper(requireContext());
+        dbHelper = MemoDBHelper.getInstance(requireContext());
 
         // Setup OSM MapView Options
         mapView.setMultiTouchControls(true);
@@ -265,6 +266,7 @@ public class MapFragment extends Fragment {
     }
 
     private void requestFreshLocation() {
+        if (getContext() == null) return;
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -276,16 +278,22 @@ public class MapFragment extends Fragment {
         if (locationManager == null) return;
 
         try {
-            android.location.LocationListener tempListener = new android.location.LocationListener() {
+            // Remove previous active listener if any to avoid leak
+            if (activeLocationListener != null) {
+                locationManager.removeUpdates(activeLocationListener);
+            }
+
+            activeLocationListener = new android.location.LocationListener() {
                 @Override
                 public void onLocationChanged(@NonNull Location loc) {
                     selectedLat = loc.getLatitude();
                     selectedLng = loc.getLongitude();
-                    if (mapView != null) {
+                    if (isAdded() && mapView != null) {
                         mapView.getController().animateTo(new GeoPoint(selectedLat, selectedLng), 15.0, null);
+                        loadAndPlotMemos();
                     }
-                    loadAndPlotMemos();
                     locationManager.removeUpdates(this);
+                    activeLocationListener = null;
                 }
                 @Override
                 public void onStatusChanged(String provider, int status, Bundle extras) {}
@@ -296,10 +304,10 @@ public class MapFragment extends Fragment {
             };
 
             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, tempListener, android.os.Looper.getMainLooper());
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, activeLocationListener, android.os.Looper.getMainLooper());
             }
             if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, tempListener, android.os.Looper.getMainLooper());
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, activeLocationListener, android.os.Looper.getMainLooper());
             }
         } catch (SecurityException e) {
             e.printStackTrace();
@@ -325,14 +333,18 @@ public class MapFragment extends Fragment {
     public void onPause() {
         super.onPause();
         if (mapView != null) mapView.onPause();
+        if (activeLocationListener != null && getContext() != null) {
+            LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+            if (locationManager != null) {
+                locationManager.removeUpdates(activeLocationListener);
+            }
+            activeLocationListener = null;
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (dbHelper != null) {
-            dbHelper.close();
-        }
     }
 
     private void setupMapSearch() {
@@ -371,6 +383,10 @@ public class MapFragment extends Fragment {
     }
 
     private void performSearch(String query) {
+        if (getContext() == null) return;
+        Context appContext = requireContext().getApplicationContext();
+        String userAgent = appContext.getPackageName() + "/1.0";
+
         new Thread(() -> {
             GeoPoint searchResult = null;
 
@@ -382,7 +398,7 @@ public class MapFragment extends Fragment {
                 URL url = new URL(urlStr);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setRequestProperty("User-Agent", requireContext().getPackageName() + "/1.0");
+                conn.setRequestProperty("User-Agent", userAgent);
                 conn.setConnectTimeout(5000);
                 conn.setReadTimeout(5000);
 
@@ -412,7 +428,7 @@ public class MapFragment extends Fragment {
             if (searchResult == null) {
                 try {
                     if (Geocoder.isPresent()) {
-                        Geocoder geocoder = new Geocoder(requireContext(), Locale.ENGLISH);
+                        Geocoder geocoder = new Geocoder(appContext, Locale.ENGLISH);
                         List<Address> addresses = geocoder.getFromLocationName(query, 1);
                         if (addresses != null && !addresses.isEmpty()) {
                             Address address = addresses.get(0);
@@ -428,15 +444,17 @@ public class MapFragment extends Fragment {
             final GeoPoint finalResult = searchResult;
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() -> {
-                    if (finalResult != null) {
-                        selectedLat = finalResult.getLatitude();
-                        selectedLng = finalResult.getLongitude();
-                        if (mapView != null) {
-                            mapView.getController().animateTo(finalResult, 15.0, null);
+                    if (isAdded() && getActivity() != null) {
+                        if (finalResult != null) {
+                            selectedLat = finalResult.getLatitude();
+                            selectedLng = finalResult.getLongitude();
+                            if (mapView != null) {
+                                mapView.getController().animateTo(finalResult, 15.0, null);
+                            }
+                            loadAndPlotMemos();
+                        } else {
+                            showSearchErrorToast();
                         }
-                        loadAndPlotMemos();
-                    } else {
-                        showSearchErrorToast();
                     }
                 });
             }

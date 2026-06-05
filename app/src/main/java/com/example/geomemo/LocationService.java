@@ -39,7 +39,7 @@ public class LocationService extends Service implements LocationListener {
     public void onCreate() {
         super.onCreate();
         createNotificationChannels();
-        dbHelper = new MemoDBHelper(this);
+        dbHelper = MemoDBHelper.getInstance(this);
     }
 
     @Override

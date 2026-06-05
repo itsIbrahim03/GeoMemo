@@ -12,8 +12,12 @@ public class BootReceiver extends BroadcastReceiver {
             SharedPreferences prefs = context.getSharedPreferences("geomemo_prefs", Context.MODE_PRIVATE);
             boolean notificationsEnabled = prefs.getBoolean("notifications_enabled", true);
             if (notificationsEnabled) {
-                Intent serviceIntent = new Intent(context, LocationService.class);
-                context.startForegroundService(serviceIntent);
+                try {
+                    Intent serviceIntent = new Intent(context, LocationService.class);
+                    context.startForegroundService(serviceIntent);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
