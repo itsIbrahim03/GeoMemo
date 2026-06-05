@@ -7,7 +7,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
-import android.view.animation.BounceInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
@@ -20,7 +19,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 public class SplashActivity extends AppCompatActivity {
 
-    private static final int SPLASH_DURATION = 3500;
+    private static final int SPLASH_DURATION = 3750;
 
     @SuppressWarnings("deprecation")
     @Override

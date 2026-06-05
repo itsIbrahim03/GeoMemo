@@ -1,0 +1,453 @@
+package com.example.geomemo;
+
+import android.Manifest;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import org.osmdroid.config.Configuration;
+import org.osmdroid.events.MapEventsReceiver;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.MapEventsOverlay;
+import org.osmdroid.views.overlay.Marker;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.util.List;
+import java.util.Locale;
+
+public class MapFragment extends Fragment {
+
+    private static final int REQUEST_ADD_MEMO = 1;
+    private static final double DEFAULT_LAT = 31.7683;
+    private static final double DEFAULT_LNG = 35.2137;
+
+    private MapView mapView;
+    private FloatingActionButton fabAddMemo;
+    private MemoDBHelper dbHelper;
+
+    private double selectedLat = DEFAULT_LAT;
+    private double selectedLng = DEFAULT_LNG;
+
+    private EditText editSearchMap;
+    private ImageButton btnClearSearch;
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        // Initialize OSMDroid Configuration
+        Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
+
+        View view = inflater.inflate(R.layout.fragment_map, container, false);
+
+        mapView = view.findViewById(R.id.map_view);
+        fabAddMemo = view.findViewById(R.id.fab_add_memo);
+        editSearchMap = view.findViewById(R.id.edit_search_map);
+        btnClearSearch = view.findViewById(R.id.btn_clear_search);
+
+        dbHelper = new MemoDBHelper(requireContext());
+
+        // Setup OSM MapView Options
+        mapView.setMultiTouchControls(true);
+        mapView.getZoomController().setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT);
+        
+        // 100% Free OpenStreetMap Mapnik tiles (Hebrew/English labels)
+        mapView.setTileSource(TileSourceFactory.MAPNIK);
+
+        // Center map on last known location or default
+        GeoPoint startPoint = getLastKnownGeoPoint();
+        if (startPoint == null) {
+            startPoint = new GeoPoint(DEFAULT_LAT, DEFAULT_LNG);
+        }
+        selectedLat = startPoint.getLatitude();
+        selectedLng = startPoint.getLongitude();
+        mapView.getController().setZoom(15.0);
+        mapView.getController().setCenter(startPoint);
+
+        setupMapSearch();
+
+        // FAB click to add a memo using the current selection coordinates
+        fabAddMemo.setOnClickListener(v -> openAddMemoActivity());
+
+        // Setup location centering button click listener
+        View btnMyLocation = view.findViewById(R.id.btn_my_location);
+        if (btnMyLocation != null) {
+            btnMyLocation.setOnClickListener(v -> {
+                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 100);
+                    return;
+                }
+                GeoPoint currentPoint = getLastKnownGeoPoint();
+                if (currentPoint != null) {
+                    selectedLat = currentPoint.getLatitude();
+                    selectedLng = currentPoint.getLongitude();
+                    if (mapView != null) {
+                        mapView.getController().animateTo(currentPoint, 15.0, null);
+                    }
+                    loadAndPlotMemos();
+                } else {
+                    Toast.makeText(requireContext(), "Fetching current location...", Toast.LENGTH_SHORT).show();
+                }
+                requestFreshLocation();
+            });
+        }
+
+        return view;
+    }
+
+    private void loadAndPlotMemos() {
+        if (mapView == null) return;
+        mapView.getOverlays().clear();
+
+        // 1. Add map tap event listener to pick coordinate
+        MapEventsReceiver receiver = new MapEventsReceiver() {
+            @Override
+            public boolean singleTapConfirmedHelper(GeoPoint p) {
+                selectedLat = p.getLatitude();
+                selectedLng = p.getLongitude();
+                loadAndPlotMemos();
+                return true;
+            }
+
+            @Override
+            public boolean longPressHelper(GeoPoint p) {
+                return false;
+            }
+        };
+        mapView.getOverlays().add(new MapEventsOverlay(receiver));
+
+        // 2. Plot saved memos
+        List<Memo> memos = dbHelper.getAllMemos();
+        for (Memo memo : memos) {
+            Marker marker = new Marker(mapView);
+            marker.setPosition(new GeoPoint(memo.getLatitude(), memo.getLongitude()));
+            marker.setTitle(memo.getTitle());
+            marker.setSubDescription(memo.getText());
+            marker.setRelatedObject(memo);
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            marker.setOnMarkerClickListener((m, mv) -> {
+                if (m.getRelatedObject() instanceof Memo) {
+                    Memo clicked = (Memo) m.getRelatedObject();
+                    if (getActivity() instanceof MainActivity) {
+                        ((MainActivity) getActivity()).onMemoClick(clicked);
+                    }
+                    return true;
+                }
+                return false;
+            });
+            mapView.getOverlays().add(marker);
+        }
+
+        // 3. Plot coordinate selection marker (scaled to 16dp)
+        Marker selectionMarker = new Marker(mapView);
+        selectionMarker.setPosition(new GeoPoint(selectedLat, selectedLng));
+        selectionMarker.setTitle("Selected Location (Drag me!)");
+        selectionMarker.setSubDescription("Double-click to add note here");
+        selectionMarker.setId("selection");
+        selectionMarker.setDraggable(true);
+        selectionMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+        
+        Drawable icon = getCustomMarkerIcon();
+        if (icon != null) {
+            selectionMarker.setIcon(icon);
+        }
+
+        final long[] lastClickTime = {0};
+        selectionMarker.setOnMarkerClickListener((m, mv) -> {
+            long clickTime = System.currentTimeMillis();
+            if (clickTime - lastClickTime[0] < 500) {
+                openAddMemoActivity();
+                lastClickTime[0] = 0;
+            } else {
+                lastClickTime[0] = clickTime;
+                m.showInfoWindow();
+            }
+            return true;
+        });
+
+        selectionMarker.setOnMarkerDragListener(new Marker.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDrag(Marker marker) {}
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+                selectedLat = marker.getPosition().getLatitude();
+                selectedLng = marker.getPosition().getLongitude();
+            }
+
+            @Override
+            public void onMarkerDragStart(Marker marker) {}
+        });
+
+        mapView.getOverlays().add(selectionMarker);
+        mapView.invalidate();
+    }
+
+    private Drawable getCustomMarkerIcon() {
+        Drawable drawable = ContextCompat.getDrawable(requireContext(), R.drawable.map_pointer);
+        if (drawable != null) {
+            int height = (int) (48 * getResources().getDisplayMetrics().density);
+            int width = (int) (height * ((double) drawable.getIntrinsicWidth() / drawable.getIntrinsicHeight()));
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            drawable.setBounds(0, 0, width, height);
+            drawable.draw(canvas);
+            return new BitmapDrawable(getResources(), bitmap);
+        }
+        return null;
+    }
+
+    private void openAddMemoActivity() {
+        Intent intent = new Intent(getActivity(), AddMemoActivity.class);
+        intent.putExtra("latitude", selectedLat);
+        intent.putExtra("longitude", selectedLng);
+        startActivityForResult(intent, REQUEST_ADD_MEMO);
+    }
+
+    private GeoPoint getLastKnownGeoPoint() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return null;
+        }
+
+        LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null) return null;
+
+        Location location = null;
+        List<String> providers = locationManager.getProviders(true);
+        for (String provider : providers) {
+            Location lastKnown = locationManager.getLastKnownLocation(provider);
+            if (lastKnown != null) {
+                if (location == null || lastKnown.getTime() > location.getTime()) {
+                    location = lastKnown;
+                }
+            }
+        }
+
+        if (location != null) {
+            return new GeoPoint(location.getLatitude(), location.getLongitude());
+        }
+        return null;
+    }
+
+    private void requestFreshLocation() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null) return;
+
+        try {
+            android.location.LocationListener tempListener = new android.location.LocationListener() {
+                @Override
+                public void onLocationChanged(@NonNull Location loc) {
+                    selectedLat = loc.getLatitude();
+                    selectedLng = loc.getLongitude();
+                    if (mapView != null) {
+                        mapView.getController().animateTo(new GeoPoint(selectedLat, selectedLng), 15.0, null);
+                    }
+                    loadAndPlotMemos();
+                    locationManager.removeUpdates(this);
+                }
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {}
+                @Override
+                public void onProviderEnabled(@NonNull String provider) {}
+                @Override
+                public void onProviderDisabled(@NonNull String provider) {}
+            };
+
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, tempListener, android.os.Looper.getMainLooper());
+            }
+            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, tempListener, android.os.Looper.getMainLooper());
+            }
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_ADD_MEMO && resultCode == getActivity().RESULT_OK) {
+            loadAndPlotMemos();
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mapView != null) mapView.onResume();
+        loadAndPlotMemos();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (mapView != null) mapView.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (dbHelper != null) {
+            dbHelper.close();
+        }
+    }
+
+    private void setupMapSearch() {
+        if (editSearchMap == null || btnClearSearch == null) return;
+
+        editSearchMap.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                btnClearSearch.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
+        });
+
+        btnClearSearch.setOnClickListener(v -> editSearchMap.setText(""));
+
+        editSearchMap.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                String query = editSearchMap.getText().toString().trim();
+                if (!query.isEmpty()) {
+                    performSearch(query);
+                }
+                android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager)
+                        requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.hideSoftInputFromWindow(editSearchMap.getWindowToken(), 0);
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void performSearch(String query) {
+        new Thread(() -> {
+            GeoPoint searchResult = null;
+
+            // 1. Try Nominatim (OpenStreetMap's official geocoder) - supports English & Hebrew
+            try {
+                String encodedQuery = URLEncoder.encode(query, "UTF-8");
+                String urlStr = "https://nominatim.openstreetmap.org/search?q=" + encodedQuery
+                        + "&format=json&limit=1&accept-language=en,he";
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("User-Agent", requireContext().getPackageName() + "/1.0");
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+
+                    JSONArray results = new JSONArray(response.toString());
+                    if (results.length() > 0) {
+                        JSONObject result = results.getJSONObject(0);
+                        double lat = result.getDouble("lat");
+                        double lon = result.getDouble("lon");
+                        searchResult = new GeoPoint(lat, lon);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // 2. Fallback to Android Geocoder if Nominatim failed
+            if (searchResult == null) {
+                try {
+                    if (Geocoder.isPresent()) {
+                        Geocoder geocoder = new Geocoder(requireContext(), Locale.ENGLISH);
+                        List<Address> addresses = geocoder.getFromLocationName(query, 1);
+                        if (addresses != null && !addresses.isEmpty()) {
+                            Address address = addresses.get(0);
+                            searchResult = new GeoPoint(address.getLatitude(), address.getLongitude());
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // 3. Process search result on Main Thread
+            final GeoPoint finalResult = searchResult;
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (finalResult != null) {
+                        selectedLat = finalResult.getLatitude();
+                        selectedLng = finalResult.getLongitude();
+                        if (mapView != null) {
+                            mapView.getController().animateTo(finalResult, 15.0, null);
+                        }
+                        loadAndPlotMemos();
+                    } else {
+                        showSearchErrorToast();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void showSearchErrorToast() {
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> 
+                Toast.makeText(requireContext(), "Location not found", Toast.LENGTH_SHORT).show()
+            );
+        }
+    }
+}
