@@ -1,15 +1,44 @@
+# --- IDE Files (IntelliJ / Android Studio) ---
 *.iml
-.gradle
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/shelf/
+.idea/nav/
+
+# --- Build Outputs ---
+/build/
+/*/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aar
+
+# --- Local Configurations & SDK Paths ---
+.gradle/
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
 local.properties
+
+# --- OS Specific Files ---
+.DS_Store
+Thumbs.db
+
+# --- Databases and Testing Files (GeoMemo Specific) ---
+*.db
+*.db-journal
+*.db-wal
+geomemo.db
+screen.png
+
+# --- Security and Keys ---
+*.jks
+*.keystore
+
+# --- Log Files ---
+*.log
+*.stacktrace
