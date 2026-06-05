@@ -1,4 +1,70 @@
 <resources>
     <string name="app_name">GeoMemo</string>
     <string name="splash_tagline">Your memories, pinned to the map</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_add_memo">Add Memo</string>
+    <string name="hint_memo_title">Memo Title</string>
+    <string name="hint_memo_text">What do you need to remember?</string>
+    <string name="btn_use_current_location">Use My Location</string>
+    <string name="hint_search_address">Search address…</string>
+    <string name="label_detection_radius">Detection Radius</string>
+    <string name="label_notifications">Enable Notifications</string>
+    <string name="label_notification_desc">Get notified when near a saved memo</string>
+    <string name="menu_about">About</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_exit">Exit</string>
+    <string name="about_title">About GeoMemo</string>
+    <string name="exit_title">Exit</string>
+    <string name="exit_message">Are you sure you want to exit?</string>
+    <string name="btn_yes">Yes</string>
+    <string name="btn_no">No</string>
+    <string name="empty_memo_list">No memos yet.\nTap + to add your first memo!</string>
+    <string name="notification_channel_proximity">Proximity Alerts</string>
+    <string name="notification_channel_service">Location Service</string>
+    <string name="notification_proximity_title">GeoMemo Reminder</string>
+    <string name="service_notification_title">GeoMemo Active</string>
+    <string name="service_notification_text">Monitoring your location for memo reminders</string>
+    <string name="selected_location">Selected: %1$.4f, %2$.4f</string>
+    <string name="no_location_selected">Tap the map to select a location</string>
+    <string name="student_names">Mohammad Othman, Ibraheim Amo, Obaidah Sarahneh</string>
+    <string name="student_ids">211354931, 213942972, 086972312</string>
+    <string name="submission_date">28/06/2026</string>
+    <string-array name="radius_options">
+        <item>50 meters</item>
+        <item>100 meters</item>
+        <item>150 meters</item>
+        <item>200 meters</item>
+        <item>250 meters</item>
+        <item>300 meters</item>
+        <item>350 meters</item>
+        <item>400 meters</item>
+        <item>450 meters</item>
+        <item>500 meters</item>
+    </string-array>
+    <integer-array name="radius_values">
+        <item>50</item>
+        <item>100</item>
+        <item>150</item>
+        <item>200</item>
+        <item>250</item>
+        <item>300</item>
+        <item>350</item>
+        <item>400</item>
+        <item>450</item>
+        <item>500</item>
+    </integer-array>
+    <string name="label_appearance">Appearance</string>
+    <string-array name="theme_options">
+        <item>Light</item>
+        <item>Dark</item>
+        <item>System default</item>
+    </string-array>
+    <string-array name="sort_options">
+        <item>Date (Desc)</item>
+        <item>Date (Asc)</item>
+        <item>Distance (Asc)</item>
+        <item>Distance (Desc)</item>
+    </string-array>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
 </resources>
