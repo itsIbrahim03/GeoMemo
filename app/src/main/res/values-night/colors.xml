@@ -5,4 +5,5 @@
     <color name="text_secondary">#A0A0A0</color>
     <color name="search_background">#1E1E1E</color>
     <color name="divider_color">#2C2C2C</color>
+    <color name="add_memo_bg">#121212</color>
 </resources>

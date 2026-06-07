@@ -3,6 +3,7 @@
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/accent</item>
+        <item name="colorControlNormal">@color/white</item>
     </style>
 
     <style name="Theme.GeoMemo" parent="Base.Theme.GeoMemo" />
@@ -13,8 +14,27 @@
         <item name="android:navigationBarColor">@color/splash_background</item>
     </style>
 
-    <style name="Theme.GeoMemo.AppBar" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.GeoMemo.AppBar" parent="Base.Theme.GeoMemo">
         <item name="android:statusBarColor">@color/status_bar_main</item>
         <item name="android:navigationBarColor">@color/white</item>
+        <item name="drawerArrowStyle">@style/DrawerArrowStyle</item>
+    </style>
+
+    <style name="DrawerArrowStyle" parent="Widget.AppCompat.DrawerArrowToggle">
+        <item name="color">@color/white</item>
+    </style>
+
+    <style name="Theme.GeoMemo.AddMemo" parent="Base.Theme.GeoMemo">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowFrame">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:statusBarColor">@color/status_bar_main</item>
     </style>
 </resources>

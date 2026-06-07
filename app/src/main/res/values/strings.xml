@@ -27,7 +27,7 @@
     <string name="selected_location">Selected: %1$.4f, %2$.4f</string>
     <string name="no_location_selected">Tap the map to select a location</string>
     <string name="student_names">Mohammad Othman, Ibraheim Amo, Obaidah Sarahneh</string>
-    <string name="student_ids">211354931, 213942972, 086972312</string>
+    <string name="student_ids">211354931, 213942972, 213279680</string>
     <string name="submission_date">28/06/2026</string>
     <string-array name="radius_options">
         <item>50 meters</item>

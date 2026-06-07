@@ -4,11 +4,12 @@
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/accent</item>
+        <item name="colorControlNormal">@color/white</item>
     </style>
 
     <style name="Theme.GeoMemo" parent="Base.Theme.GeoMemo" />
 
-    <style name="Theme.GeoMemo.AppBar" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.GeoMemo.AppBar" parent="Base.Theme.GeoMemo">
         <item name="android:statusBarColor">@color/status_bar_main</item>
         <item name="android:navigationBarColor">#121212</item> <!-- Premium dark background for navigation bar -->
     </style>
