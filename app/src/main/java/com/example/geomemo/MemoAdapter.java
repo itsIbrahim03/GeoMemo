@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.PopupMenu;
@@ -39,6 +40,16 @@ public class MemoAdapter extends RecyclerView.Adapter<MemoAdapter.MemoViewHolder
     @Override
     public void onBindViewHolder(@NonNull MemoViewHolder holder, int position) {
         Memo memo = memos.get(position);
+
+        // Set custom pointer icon drawable
+        int resId = holder.itemView.getContext().getResources().getIdentifier(
+                memo.getPointerIcon(), "drawable", holder.itemView.getContext().getPackageName()
+        );
+        if (resId != 0) {
+            holder.imgIcon.setImageResource(resId);
+        } else {
+            holder.imgIcon.setImageResource(R.drawable.pointer_1);
+        }
 
         holder.textTitle.setText(memo.getTitle());
 
@@ -114,6 +125,7 @@ public class MemoAdapter extends RecyclerView.Adapter<MemoAdapter.MemoViewHolder
         TextView textText;
         TextView textDate;
         ImageButton btnOptions;
+        ImageView imgIcon;
 
         MemoViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -121,6 +133,7 @@ public class MemoAdapter extends RecyclerView.Adapter<MemoAdapter.MemoViewHolder
             textText = itemView.findViewById(R.id.text_memo_text);
             textDate = itemView.findViewById(R.id.text_memo_date);
             btnOptions = itemView.findViewById(R.id.btn_memo_options);
+            imgIcon = itemView.findViewById(R.id.img_memo_icon);
         }
     }
 }

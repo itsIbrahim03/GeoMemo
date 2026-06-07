@@ -96,6 +96,21 @@ public class MapFragment extends Fragment {
         mapView.getController().setZoom(15.0);
         mapView.getController().setCenter(startPoint);
 
+        // Track panning and zooming to keep the selected location synchronized with the map center
+        mapView.addMapListener(new org.osmdroid.events.MapListener() {
+            @Override
+            public boolean onScroll(org.osmdroid.events.ScrollEvent event) {
+                updateCoordinatesFromMapCenter();
+                return true;
+            }
+
+            @Override
+            public boolean onZoom(org.osmdroid.events.ZoomEvent event) {
+                updateCoordinatesFromMapCenter();
+                return true;
+            }
+        });
+
         setupMapSearch();
 
         // FAB click to add a memo using the current selection coordinates
@@ -108,6 +123,9 @@ public class MapFragment extends Fragment {
                 if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                         != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 100);
+                    return;
+                }
+                if (!checkGpsEnabled()) {
                     return;
                 }
                 GeoPoint currentPoint = getLastKnownGeoPoint();
@@ -132,13 +150,13 @@ public class MapFragment extends Fragment {
         if (mapView == null) return;
         mapView.getOverlays().clear();
 
-        // 1. Add map tap event listener to pick coordinate
+        // 1. Add map tap event listener to center map on tapped coordinate
         MapEventsReceiver receiver = new MapEventsReceiver() {
             @Override
             public boolean singleTapConfirmedHelper(GeoPoint p) {
-                selectedLat = p.getLatitude();
-                selectedLng = p.getLongitude();
-                loadAndPlotMemos();
+                if (mapView != null) {
+                    mapView.getController().animateTo(p);
+                }
                 return true;
             }
 
@@ -158,6 +176,7 @@ public class MapFragment extends Fragment {
             marker.setSubDescription(memo.getText());
             marker.setRelatedObject(memo);
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            marker.setIcon(MarkerHelper.getScaledMarker(requireContext(), memo.getPointerIcon(), 36));
             marker.setOnMarkerClickListener((m, mv) -> {
                 if (m.getRelatedObject() instanceof Memo) {
                     Memo clicked = (Memo) m.getRelatedObject();
@@ -171,70 +190,36 @@ public class MapFragment extends Fragment {
             mapView.getOverlays().add(marker);
         }
 
-        // 3. Plot coordinate selection marker (scaled to 16dp)
-        Marker selectionMarker = new Marker(mapView);
-        selectionMarker.setPosition(new GeoPoint(selectedLat, selectedLng));
-        selectionMarker.setTitle("Selected Location (Drag me!)");
-        selectionMarker.setSubDescription("Double-click to add note here");
-        selectionMarker.setId("selection");
-        selectionMarker.setDraggable(true);
-        selectionMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        
-        Drawable icon = getCustomMarkerIcon();
-        if (icon != null) {
-            selectionMarker.setIcon(icon);
-        }
-
-        final long[] lastClickTime = {0};
-        selectionMarker.setOnMarkerClickListener((m, mv) -> {
-            long clickTime = System.currentTimeMillis();
-            if (clickTime - lastClickTime[0] < 500) {
-                openAddMemoActivity();
-                lastClickTime[0] = 0;
-            } else {
-                lastClickTime[0] = clickTime;
-                m.showInfoWindow();
-            }
-            return true;
-        });
-
-        selectionMarker.setOnMarkerDragListener(new Marker.OnMarkerDragListener() {
-            @Override
-            public void onMarkerDrag(Marker marker) {}
-
-            @Override
-            public void onMarkerDragEnd(Marker marker) {
-                selectedLat = marker.getPosition().getLatitude();
-                selectedLng = marker.getPosition().getLongitude();
-            }
-
-            @Override
-            public void onMarkerDragStart(Marker marker) {}
-        });
-
-        mapView.getOverlays().add(selectionMarker);
         mapView.invalidate();
     }
 
-    private Drawable getCustomMarkerIcon() {
-        Drawable drawable = ContextCompat.getDrawable(requireContext(), R.drawable.map_pointer);
-        if (drawable != null) {
-            int height = (int) (48 * getResources().getDisplayMetrics().density);
-            int width = (int) (height * ((double) drawable.getIntrinsicWidth() / drawable.getIntrinsicHeight()));
-            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(bitmap);
-            drawable.setBounds(0, 0, width, height);
-            drawable.draw(canvas);
-            return new BitmapDrawable(getResources(), bitmap);
+    private void updateCoordinatesFromMapCenter() {
+        if (mapView != null) {
+            GeoPoint center = (GeoPoint) mapView.getMapCenter();
+            selectedLat = center.getLatitude();
+            selectedLng = center.getLongitude();
         }
-        return null;
     }
 
     private void openAddMemoActivity() {
+        if (fabAddMemo != null) {
+            fabAddMemo.setImageDrawable(null);
+        }
         Intent intent = new Intent(getActivity(), AddMemoActivity.class);
         intent.putExtra("latitude", selectedLat);
         intent.putExtra("longitude", selectedLng);
+        if (fabAddMemo != null) {
+            int[] location = new int[2];
+            fabAddMemo.getLocationOnScreen(location);
+            int fabX = location[0] + fabAddMemo.getWidth() / 2;
+            int fabY = location[1] + fabAddMemo.getHeight() / 2;
+            intent.putExtra("fab_x", fabX);
+            intent.putExtra("fab_y", fabY);
+        }
         startActivityForResult(intent, REQUEST_ADD_MEMO);
+        if (getActivity() != null) {
+            getActivity().overridePendingTransition(0, 0);
+        }
     }
 
     private GeoPoint getLastKnownGeoPoint() {
@@ -327,18 +312,28 @@ public class MapFragment extends Fragment {
         super.onResume();
         if (mapView != null) mapView.onResume();
         loadAndPlotMemos();
+        if (fabAddMemo != null) {
+            fabAddMemo.setImageResource(android.R.drawable.ic_input_add);
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        if (mapView != null) mapView.onPause();
         if (activeLocationListener != null && getContext() != null) {
             LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
             if (locationManager != null) {
                 locationManager.removeUpdates(activeLocationListener);
             }
             activeLocationListener = null;
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (mapView != null) {
+            mapView.onPause();
         }
     }
 
@@ -467,5 +462,32 @@ public class MapFragment extends Fragment {
                 Toast.makeText(requireContext(), "Location not found", Toast.LENGTH_SHORT).show()
             );
         }
+    }
+
+    private boolean checkGpsEnabled() {
+        if (getContext() == null) return false;
+        android.location.LocationManager lm = (android.location.LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+        boolean gpsEnabled = false;
+        boolean networkEnabled = false;
+        try {
+            gpsEnabled = lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER);
+        } catch (Exception e) {}
+        try {
+            networkEnabled = lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER);
+        } catch (Exception e) {}
+
+        if (!gpsEnabled && !networkEnabled) {
+            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle("Location Services Disabled")
+                    .setMessage("GeoMemo requires location services to be enabled. Please turn on GPS/Location services in your settings.")
+                    .setPositiveButton("Settings", (dialog, which) -> {
+                        Intent intent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            return false;
+        }
+        return true;
     }
 }

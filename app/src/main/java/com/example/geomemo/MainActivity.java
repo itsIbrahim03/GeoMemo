@@ -114,7 +114,34 @@ public class MainActivity extends AppCompatActivity
                     LOCATION_PERMISSION_REQUEST);
         } else {
             startLocationServiceIfNeeded();
+            checkGpsEnabled();
         }
+    }
+
+    private boolean checkGpsEnabled() {
+        android.location.LocationManager lm = (android.location.LocationManager) getSystemService(LOCATION_SERVICE);
+        boolean gpsEnabled = false;
+        boolean networkEnabled = false;
+        try {
+            gpsEnabled = lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER);
+        } catch (Exception e) {}
+        try {
+            networkEnabled = lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER);
+        } catch (Exception e) {}
+
+        if (!gpsEnabled && !networkEnabled) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Location Services Disabled")
+                    .setMessage("GeoMemo requires location services to be enabled. Please turn on GPS/Location services in your settings.")
+                    .setPositiveButton("Settings", (dialog, which) -> {
+                        Intent intent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -225,6 +252,7 @@ public class MainActivity extends AppCompatActivity
         marker.setPosition(position);
         marker.setTitle(memo.getTitle());
         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+        marker.setIcon(MarkerHelper.getScaledMarker(this, memo.getPointerIcon(), 36));
         dialogMapView.getOverlays().add(marker);
 
         AlertDialog dialog = new AlertDialog.Builder(this)
@@ -292,6 +320,100 @@ public class MainActivity extends AppCompatActivity
         layout.addView(editTitle);
         layout.addView(editDesc);
 
+        // Choose Memo Icon Label
+        android.widget.TextView labelIcon = new android.widget.TextView(this);
+        labelIcon.setText("Choose Memo Icon");
+        labelIcon.setTypeface(null, android.graphics.Typeface.BOLD);
+        android.widget.LinearLayout.LayoutParams labelParams = new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        labelParams.topMargin = margin;
+        labelParams.bottomMargin = margin / 2;
+        labelIcon.setLayoutParams(labelParams);
+        layout.addView(labelIcon);
+
+        // HorizontalScrollView for pointer choices
+        android.widget.HorizontalScrollView scrollView = new android.widget.HorizontalScrollView(this);
+        android.widget.LinearLayout.LayoutParams scrollParams = new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        scrollView.setLayoutParams(scrollParams);
+        scrollView.setHorizontalScrollBarEnabled(false);
+
+        android.widget.LinearLayout layoutPointerOptions = new android.widget.LinearLayout(this);
+        layoutPointerOptions.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        layoutPointerOptions.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        scrollView.addView(layoutPointerOptions);
+        layout.addView(scrollView);
+
+        final String[] pointerIcons = {
+            "pointer_1", "pointer_2", "pointer_3", "pointer_4",
+            "pointer_5", "pointer_6", "pointer_7", "pointer_8",
+            "pointer_9", "pointer_10", "pointer_11", "pointer_12"
+        };
+        final View[] optionViews = new View[12];
+        final String[] selectedPointerIcon = { memo.getPointerIcon() != null ? memo.getPointerIcon() : "pointer_1" };
+
+        for (int i = 0; i < 12; i++) {
+            final int index = i;
+            final String pointerName = pointerIcons[i];
+            int resId = getResources().getIdentifier(pointerName, "drawable", getPackageName());
+
+            com.google.android.material.card.MaterialCardView cardView = 
+                    new com.google.android.material.card.MaterialCardView(this);
+            int sizePx = (int) (60 * getResources().getDisplayMetrics().density);
+            int marginPx = (int) (6 * getResources().getDisplayMetrics().density);
+            android.widget.LinearLayout.LayoutParams cardParams = 
+                    new android.widget.LinearLayout.LayoutParams(sizePx, sizePx);
+            cardParams.setMargins(marginPx, marginPx, marginPx, marginPx);
+            cardView.setLayoutParams(cardParams);
+            cardView.setRadius(8 * getResources().getDisplayMetrics().density);
+            cardView.setStrokeWidth((int) (2 * getResources().getDisplayMetrics().density));
+            cardView.setStrokeColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.transparent));
+            cardView.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(this, R.color.card_background));
+            cardView.setClickable(true);
+            cardView.setFocusable(true);
+
+            android.widget.ImageView imageView = new android.widget.ImageView(this);
+            int paddingPx = (int) (8 * getResources().getDisplayMetrics().density);
+            imageView.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
+            imageView.setImageResource(resId);
+            imageView.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+            cardView.addView(imageView);
+
+            optionViews[i] = cardView;
+
+            cardView.setOnClickListener(v -> {
+                selectedPointerIcon[0] = pointerName;
+                for (int j = 0; j < 12; j++) {
+                    com.google.android.material.card.MaterialCardView cv = 
+                            (com.google.android.material.card.MaterialCardView) optionViews[j];
+                    if (cv != null) {
+                        if (j == index) {
+                            cv.setStrokeColor(androidx.core.content.ContextCompat.getColor(this, R.color.primary));
+                            cv.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(this, R.color.accent));
+                        } else {
+                            cv.setStrokeColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.transparent));
+                            cv.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(this, R.color.card_background));
+                        }
+                    }
+                }
+            });
+
+            layoutPointerOptions.addView(cardView);
+        }
+
+        // Initially select the correct icon card
+        int initialSelectionIndex = 0;
+        for (int i = 0; i < 12; i++) {
+            if (pointerIcons[i].equals(selectedPointerIcon[0])) {
+                initialSelectionIndex = i;
+                break;
+            }
+        }
+        if (optionViews[initialSelectionIndex] != null) {
+            optionViews[initialSelectionIndex].performClick();
+        }
+
         new AlertDialog.Builder(this)
                 .setTitle("Edit Memo")
                 .setView(layout)
@@ -306,6 +428,7 @@ public class MainActivity extends AppCompatActivity
 
                     memo.setTitle(newTitle);
                     memo.setText(newDesc);
+                    memo.setPointerIcon(selectedPointerIcon[0]);
                     dbHelper.updateMemo(memo);
                     
                     // Reload notes fragment
@@ -341,6 +464,7 @@ public class MainActivity extends AppCompatActivity
         if (requestCode == LOCATION_PERMISSION_REQUEST) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startLocationServiceIfNeeded();
+                checkGpsEnabled();
             }
         }
     }

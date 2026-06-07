@@ -24,7 +24,16 @@ public class AboutFragment extends Fragment {
         TextView aboutSystem = view.findViewById(R.id.about_system);
 
         aboutAppId.setText(requireContext().getPackageName());
-        aboutStudents.setText(getString(R.string.student_names) + "\n" + getString(R.string.student_ids));
+        String[] names = getString(R.string.student_names).split(",");
+        String[] ids = getString(R.string.student_ids).split(",");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(names.length, ids.length); i++) {
+            sb.append(names[i].trim()).append(" (").append(ids[i].trim()).append(")");
+            if (i < Math.min(names.length, ids.length) - 1) {
+                sb.append("\n");
+            }
+        }
+        aboutStudents.setText(sb.toString());
 
         String systemInfo = "Android Version: " + Build.VERSION.RELEASE + "\n"
                 + "API Level: " + Build.VERSION.SDK_INT + "\n"

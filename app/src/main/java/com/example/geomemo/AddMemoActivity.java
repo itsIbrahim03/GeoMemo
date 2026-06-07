@@ -58,11 +58,16 @@ public class AddMemoActivity extends AppCompatActivity {
     private double selectedLat = Double.NaN;
     private double selectedLng = Double.NaN;
     private MemoDBHelper dbHelper;
+    private boolean isExiting = false;
+    private String selectedPointerIcon = "pointer_1";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_memo);
+
+        // Make window layout full screen even though it is floating
+        getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT);
 
         // Setup toolbar
         Toolbar toolbar = findViewById(R.id.toolbar_add_memo);
@@ -97,8 +102,159 @@ public class AddMemoActivity extends AppCompatActivity {
         ImageButton btnEditLocation = findViewById(R.id.btn_edit_location);
         btnEditLocation.setOnClickListener(v -> showLocationPickerDialog());
 
+        // Setup dynamic pointer icon options
+        android.widget.LinearLayout layoutPointerOptions = findViewById(R.id.layout_pointer_options);
+        final String[] pointerIcons = {
+            "pointer_1", "pointer_2", "pointer_3", "pointer_4",
+            "pointer_5", "pointer_6", "pointer_7", "pointer_8",
+            "pointer_9", "pointer_10", "pointer_11", "pointer_12"
+        };
+        final View[] optionViews = new View[12];
+
+        for (int i = 0; i < 12; i++) {
+            final int index = i;
+            final String pointerName = pointerIcons[i];
+            int resId = getResources().getIdentifier(pointerName, "drawable", getPackageName());
+
+            com.google.android.material.card.MaterialCardView cardView = 
+                    new com.google.android.material.card.MaterialCardView(this);
+            int sizePx = (int) (60 * getResources().getDisplayMetrics().density);
+            int marginPx = (int) (6 * getResources().getDisplayMetrics().density);
+            android.widget.LinearLayout.LayoutParams params = 
+                    new android.widget.LinearLayout.LayoutParams(sizePx, sizePx);
+            params.setMargins(marginPx, marginPx, marginPx, marginPx);
+            cardView.setLayoutParams(params);
+            cardView.setRadius(8 * getResources().getDisplayMetrics().density);
+            cardView.setStrokeWidth((int) (2 * getResources().getDisplayMetrics().density));
+            cardView.setStrokeColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.transparent));
+            cardView.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(this, R.color.card_background));
+            cardView.setClickable(true);
+            cardView.setFocusable(true);
+
+            android.widget.ImageView imageView = new android.widget.ImageView(this);
+            int paddingPx = (int) (8 * getResources().getDisplayMetrics().density);
+            imageView.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
+            imageView.setImageResource(resId);
+            imageView.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+            cardView.addView(imageView);
+
+            optionViews[i] = cardView;
+
+            cardView.setOnClickListener(v -> {
+                selectedPointerIcon = pointerName;
+                for (int j = 0; j < 12; j++) {
+                    com.google.android.material.card.MaterialCardView cv = 
+                            (com.google.android.material.card.MaterialCardView) optionViews[j];
+                    if (cv != null) {
+                        if (j == index) {
+                            cv.setStrokeColor(androidx.core.content.ContextCompat.getColor(this, R.color.primary));
+                            cv.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(this, R.color.accent));
+                        } else {
+                            cv.setStrokeColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.transparent));
+                            cv.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(this, R.color.card_background));
+                        }
+                    }
+                }
+            });
+
+            layoutPointerOptions.addView(cardView);
+        }
+
+        if (optionViews[0] != null) {
+            optionViews[0].performClick();
+        }
+
         // Save button listener
         btnSave.setOnClickListener(v -> saveMemo());
+
+        // Animation to grow from FAB
+        final int fabX = getIntent().getIntExtra("fab_x", -1);
+        final int fabY = getIntent().getIntExtra("fab_y", -1);
+        final View rootLayout = findViewById(R.id.add_memo_root);
+        final View contentContainer = findViewById(R.id.content_container);
+        final View addMemoScrollView = findViewById(R.id.add_memo_scrollview);
+        final View scrollContentContainer = findViewById(R.id.scroll_content_container);
+
+        if (fabX != -1 && fabY != -1) {
+            rootLayout.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                        rootLayout.setVisibility(View.VISIBLE);
+                        int[] rootLocation = new int[2];
+                        rootLayout.getLocationOnScreen(rootLocation);
+                        int relativeX = fabX - rootLocation[0];
+                        int relativeY = fabY - rootLocation[1];
+
+                        float startRadius = 28 * getResources().getDisplayMetrics().density;
+                        float endRadius = (float) Math.hypot(
+                            Math.max(relativeX, rootLayout.getWidth() - relativeX),
+                            Math.max(relativeY, rootLayout.getHeight() - relativeY)
+                        );
+
+                        android.animation.Animator anim = android.view.ViewAnimationUtils.createCircularReveal(
+                            rootLayout, relativeX, relativeY, startRadius, endRadius
+                        );
+                        anim.setDuration(450);
+                        anim.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
+                        anim.addListener(new android.animation.AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(android.animation.Animator animation) {
+                                contentContainer.setVisibility(View.VISIBLE);
+                                addMemoScrollView.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        addMemoScrollView.setVisibility(View.VISIBLE);
+                                        int[] scrollViewLocation = new int[2];
+                                        addMemoScrollView.getLocationOnScreen(scrollViewLocation);
+                                        int relativeScrollX = fabX - scrollViewLocation[0];
+                                        int relativeScrollY = fabY - scrollViewLocation[1];
+
+                                        relativeScrollX = Math.max(0, Math.min(relativeScrollX, addMemoScrollView.getWidth()));
+                                        relativeScrollY = Math.max(0, Math.min(relativeScrollY, addMemoScrollView.getHeight()));
+
+                                        float scrollStartRadius = 0;
+                                        float scrollEndRadius = (float) Math.hypot(
+                                            Math.max(relativeScrollX, addMemoScrollView.getWidth() - relativeScrollX),
+                                            Math.max(relativeScrollY, addMemoScrollView.getHeight() - relativeScrollY)
+                                        );
+
+                                        android.animation.Animator scrollAnim = android.view.ViewAnimationUtils.createCircularReveal(
+                                            addMemoScrollView, relativeScrollX, relativeScrollY, scrollStartRadius, scrollEndRadius
+                                        );
+                                        scrollAnim.setDuration(400);
+                                        scrollAnim.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
+
+                                        scrollContentContainer.setVisibility(View.VISIBLE);
+                                        scrollContentContainer.setAlpha(0f);
+                                        scrollContentContainer.setTranslationY(80f);
+                                        scrollContentContainer.animate()
+                                            .alpha(1f)
+                                            .translationY(0f)
+                                            .setDuration(400)
+                                            .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                                            .start();
+
+                                        scrollAnim.start();
+                                    }
+                                });
+                            }
+                        });
+                        anim.start();
+                    } else {
+                        rootLayout.setVisibility(View.VISIBLE);
+                        contentContainer.setVisibility(View.VISIBLE);
+                        addMemoScrollView.setVisibility(View.VISIBLE);
+                        scrollContentContainer.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+        } else {
+            rootLayout.setVisibility(View.VISIBLE);
+            contentContainer.setVisibility(View.VISIBLE);
+            addMemoScrollView.setVisibility(View.VISIBLE);
+            scrollContentContainer.setVisibility(View.VISIBLE);
+        }
     }
 
     private void saveMemo() {
@@ -125,6 +281,7 @@ public class AddMemoActivity extends AppCompatActivity {
         memo.setLatitude(selectedLat);
         memo.setLongitude(selectedLng);
         memo.setCreatedAt(currentDate);
+        memo.setPointerIcon(selectedPointerIcon);
 
         dbHelper.insertMemo(memo);
 
@@ -218,9 +375,10 @@ public class AddMemoActivity extends AppCompatActivity {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_map_picker, null);
         MapView dialogMapView = dialogView.findViewById(R.id.picker_map_view);
 
-        final double[] tempLat = {selectedLat};
-        final double[] tempLng = {selectedLng};
-        final Marker[] markerRef = {null};
+        double startLat = Double.isNaN(selectedLat) ? 31.7683 : selectedLat;
+        double startLng = Double.isNaN(selectedLng) ? 35.2137 : selectedLng;
+        final double[] tempLat = {startLat};
+        final double[] tempLng = {startLng};
 
         // Initialize OSMDroid for the dialog map
         Configuration.getInstance().setUserAgentValue(getPackageName());
@@ -228,22 +386,34 @@ public class AddMemoActivity extends AppCompatActivity {
         dialogMapView.setMultiTouchControls(true);
         dialogMapView.setTileSource(TileSourceFactory.MAPNIK);
 
-        double startLat = Double.isNaN(tempLat[0]) ? 31.7683 : tempLat[0];
-        double startLng = Double.isNaN(tempLng[0]) ? 35.2137 : tempLng[0];
         GeoPoint startPoint = new GeoPoint(startLat, startLng);
         dialogMapView.getController().setZoom(16.0);
         dialogMapView.getController().setCenter(startPoint);
 
-        // Map events receiver for tap positioning
+        // Track panning/scrolling to keep picker selection aligned with the center pointer
+        dialogMapView.addMapListener(new org.osmdroid.events.MapListener() {
+            @Override
+            public boolean onScroll(org.osmdroid.events.ScrollEvent event) {
+                GeoPoint center = (GeoPoint) dialogMapView.getMapCenter();
+                tempLat[0] = center.getLatitude();
+                tempLng[0] = center.getLongitude();
+                return true;
+            }
+
+            @Override
+            public boolean onZoom(org.osmdroid.events.ZoomEvent event) {
+                GeoPoint center = (GeoPoint) dialogMapView.getMapCenter();
+                tempLat[0] = center.getLatitude();
+                tempLng[0] = center.getLongitude();
+                return true;
+            }
+        });
+
+        // Map events receiver to center map on single tap
         MapEventsReceiver receiver = new MapEventsReceiver() {
             @Override
             public boolean singleTapConfirmedHelper(GeoPoint p) {
-                tempLat[0] = p.getLatitude();
-                tempLng[0] = p.getLongitude();
-                if (markerRef[0] != null) {
-                    markerRef[0].setPosition(p);
-                    dialogMapView.invalidate();
-                }
+                dialogMapView.getController().animateTo(p);
                 return true;
             }
 
@@ -253,33 +423,6 @@ public class AddMemoActivity extends AppCompatActivity {
             }
         };
         dialogMapView.getOverlays().add(new MapEventsOverlay(receiver));
-
-        Marker marker = new Marker(dialogMapView);
-        marker.setPosition(startPoint);
-        marker.setTitle("Drag me or tap map to position");
-        marker.setDraggable(true);
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        
-        Drawable icon = getCustomMarkerIcon();
-        if (icon != null) {
-            marker.setIcon(icon);
-        }
-        dialogMapView.getOverlays().add(marker);
-        markerRef[0] = marker;
-
-        marker.setOnMarkerDragListener(new Marker.OnMarkerDragListener() {
-            @Override
-            public void onMarkerDrag(Marker marker) {}
-
-            @Override
-            public void onMarkerDragEnd(Marker m) {
-                tempLat[0] = m.getPosition().getLatitude();
-                tempLng[0] = m.getPosition().getLongitude();
-            }
-
-            @Override
-            public void onMarkerDragStart(Marker marker) {}
-        });
 
         // Setup Search inside picker dialog
         EditText editSearchPicker = dialogView.findViewById(R.id.edit_search_picker);
@@ -341,32 +484,12 @@ public class AddMemoActivity extends AppCompatActivity {
                                 e.printStackTrace();
                             }
 
-                            // 2. Fallback to Android Geocoder if Nominatim failed
-                            if (searchResult == null) {
-                                try {
-                                    if (Geocoder.isPresent()) {
-                                        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.ENGLISH);
-                                        List<Address> addresses = geocoder.getFromLocationName(query, 1);
-                                        if (addresses != null && !addresses.isEmpty()) {
-                                            Address address = addresses.get(0);
-                                            searchResult = new GeoPoint(address.getLatitude(), address.getLongitude());
-                                        }
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-
                             // 3. Process search result on Main Thread
                             final GeoPoint finalResult = searchResult;
                             runOnUiThread(() -> {
                                 if (!isFinishing() && !isDestroyed()) {
-                                    if (finalResult != null && markerRef[0] != null) {
-                                        tempLat[0] = finalResult.getLatitude();
-                                        tempLng[0] = finalResult.getLongitude();
-                                        markerRef[0].setPosition(finalResult);
+                                    if (finalResult != null) {
                                         dialogMapView.getController().animateTo(finalResult, 16.0, null);
-                                        dialogMapView.invalidate();
                                     } else {
                                         Toast.makeText(AddMemoActivity.this, "Location not found", Toast.LENGTH_SHORT).show();
                                     }
@@ -403,18 +526,53 @@ public class AddMemoActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    private Drawable getCustomMarkerIcon() {
-        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.map_pointer);
-        if (drawable != null) {
-            int height = (int) (48 * getResources().getDisplayMetrics().density);
-            int width = (int) (height * ((double) drawable.getIntrinsicWidth() / drawable.getIntrinsicHeight()));
-            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(bitmap);
-            drawable.setBounds(0, 0, width, height);
-            drawable.draw(canvas);
-            return new BitmapDrawable(getResources(), bitmap);
+    @Override
+    public void finish() {
+        if (isExiting) {
+            super.finish();
+            return;
         }
-        return null;
+
+        final int fabX = getIntent().getIntExtra("fab_x", -1);
+        final int fabY = getIntent().getIntExtra("fab_y", -1);
+        final View rootLayout = findViewById(R.id.add_memo_root);
+        final View contentContainer = findViewById(R.id.content_container);
+
+        if (fabX != -1 && fabY != -1 && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            isExiting = true;
+
+            // Instantly hide the content container so only the solid orange background is visible
+            contentContainer.setVisibility(View.INVISIBLE);
+
+            // Shrink orange background back to FAB circle
+            int[] rootLocation = new int[2];
+            rootLayout.getLocationOnScreen(rootLocation);
+            int relativeX = fabX - rootLocation[0];
+            int relativeY = fabY - rootLocation[1];
+
+            float startRadius = 28 * getResources().getDisplayMetrics().density;
+            float endRadius = (float) Math.hypot(
+                Math.max(relativeX, rootLayout.getWidth() - relativeX),
+                Math.max(relativeY, rootLayout.getHeight() - relativeY)
+            );
+
+            android.animation.Animator anim = android.view.ViewAnimationUtils.createCircularReveal(
+                rootLayout, relativeX, relativeY, endRadius, startRadius
+            );
+            anim.setDuration(350);
+            anim.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
+            anim.addListener(new android.animation.AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(android.animation.Animator animation) {
+                    AddMemoActivity.super.finish();
+                    overridePendingTransition(0, 0);
+                }
+            });
+            anim.start();
+        } else {
+            super.finish();
+            overridePendingTransition(R.anim.stay, R.anim.slide_down);
+        }
     }
 
     @Override

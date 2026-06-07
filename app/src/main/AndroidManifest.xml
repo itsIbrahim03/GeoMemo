@@ -43,7 +43,7 @@
         <activity
             android:name=".AddMemoActivity"
             android:exported="false"
-            android:theme="@style/Theme.GeoMemo.AppBar" />
+            android:theme="@style/Theme.GeoMemo.AddMemo" />
 
 
 

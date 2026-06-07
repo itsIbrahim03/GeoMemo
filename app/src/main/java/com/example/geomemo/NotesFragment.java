@@ -118,8 +118,18 @@ public class NotesFragment extends Fragment {
 
         // FAB click
         fabAddMemo.setOnClickListener(v -> {
+            fabAddMemo.setImageDrawable(null);
             Intent intent = new Intent(getActivity(), AddMemoActivity.class);
+            int[] location = new int[2];
+            fabAddMemo.getLocationOnScreen(location);
+            int fabX = location[0] + fabAddMemo.getWidth() / 2;
+            int fabY = location[1] + fabAddMemo.getHeight() / 2;
+            intent.putExtra("fab_x", fabX);
+            intent.putExtra("fab_y", fabY);
             startActivityForResult(intent, REQUEST_ADD_MEMO);
+            if (getActivity() != null) {
+                getActivity().overridePendingTransition(0, 0);
+            }
         });
 
         loadMemos();
@@ -244,6 +254,12 @@ public class NotesFragment extends Fragment {
     public void onResume() {
         super.onResume();
         loadMemos();
+        if (getView() != null) {
+            FloatingActionButton fabAddMemo = getView().findViewById(R.id.fab_add_memo);
+            if (fabAddMemo != null) {
+                fabAddMemo.setImageResource(android.R.drawable.ic_input_add);
+            }
+        }
     }
 
     @Override
