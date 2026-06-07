@@ -8,6 +8,8 @@ public class Memo {
     private double longitude;
     private String createdAt;
 
+    private String pointerIcon = "pointer_1";
+
     public Memo() {}
 
     public Memo(String title, String text, double latitude, double longitude, String createdAt) {
@@ -16,6 +18,14 @@ public class Memo {
         this.latitude = latitude;
         this.longitude = longitude;
         this.createdAt = createdAt;
+    }
+
+    public String getPointerIcon() {
+        return pointerIcon;
+    }
+
+    public void setPointerIcon(String pointerIcon) {
+        this.pointerIcon = pointerIcon;
     }
 
     public long getId() {
