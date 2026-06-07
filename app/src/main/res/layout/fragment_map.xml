@@ -9,6 +9,15 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Centered Map Pointer Overlay -->
+    <ImageView
+        android:id="@+id/img_center_pointer"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="center"
+        android:src="@drawable/map_pointer"
+        android:contentDescription="Selected location pointer" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
