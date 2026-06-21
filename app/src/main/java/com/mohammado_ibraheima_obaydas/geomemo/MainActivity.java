@@ -1,4 +1,4 @@
-package com.example.geomemo;
+package com.mohammado_ibraheima_obaydas.geomemo;
 
 import android.Manifest;
 import android.content.Intent;
@@ -40,58 +40,30 @@ import org.osmdroid.views.overlay.Marker;
 import java.util.List;
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity 
-        implements NavigationView.OnNavigationItemSelectedListener, MemoAdapter.OnMemoClickListener {
+public class MainActivity extends BaseNavigationActivity 
+        implements MemoAdapter.OnMemoClickListener {
 
     private static final int LOCATION_PERMISSION_REQUEST = 200;
     private static final String PREFS_NAME = "geomemo_prefs";
     private static final String KEY_NOTIFICATIONS_ENABLED = "notifications_enabled";
 
-    private DrawerLayout drawerLayout;
-    private NavigationView navigationView;
     private MemoDBHelper dbHelper;
-    private int selectedItemId = R.id.nav_map;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Setup toolbar
-        Toolbar toolbar = findViewById(R.id.toolbar_main);
-        setSupportActionBar(toolbar);
-
-        drawerLayout = findViewById(R.id.drawer_layout);
-        navigationView = findViewById(R.id.nav_view);
-
-        // Setup ActionBarDrawerToggle (3 horizontal lines)
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
-        navigationView.setNavigationItemSelectedListener(this);
-
         // Initialize database helper
         dbHelper = MemoDBHelper.getInstance(this);
 
-        // Restore state or set default
-        if (savedInstanceState != null) {
-            selectedItemId = savedInstanceState.getInt("selected_item_id", R.id.nav_map);
-        } else {
-            selectedItemId = R.id.nav_map;
+        setupNavigation(R.id.nav_map);
+
+        if (savedInstanceState == null) {
             // Load MapFragment by default
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new MapFragment(), "map")
                     .commit();
-        }
-
-        // Highlight selected menu item and set title
-        MenuItem menuItem = navigationView.getMenu().findItem(selectedItemId);
-        if (menuItem != null) {
-            menuItem.setChecked(true);
-            if (getSupportActionBar() != null) {
-                getSupportActionBar().setTitle(menuItem.getTitle());
-            }
         }
 
         // Request permissions (Location and Notifications for Android 13+)
@@ -115,6 +87,27 @@ public class MainActivity extends AppCompatActivity
         } else {
             startLocationServiceIfNeeded();
             checkGpsEnabled();
+        }
+
+        handleNotificationIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleNotificationIntent(intent);
+    }
+
+    private void handleNotificationIntent(Intent intent) {
+        if (intent != null && intent.hasExtra("memo_id")) {
+            long memoId = intent.getLongExtra("memo_id", -1);
+            if (memoId != -1) {
+                Memo memo = dbHelper.getMemoById(memoId);
+                if (memo != null) {
+                    onMemoClick(memo);
+                }
+            }
         }
     }
 
@@ -144,48 +137,7 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    @Override
-    protected void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putInt("selected_item_id", selectedItemId);
-    }
-
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId();
-        selectedItemId = id;
-        item.setChecked(true);
-
-        Fragment fragment = null;
-        String tag = null;
-
-        if (id == R.id.nav_map) {
-            fragment = new MapFragment();
-            tag = "map";
-        } else if (id == R.id.nav_notes) {
-            fragment = new NotesFragment();
-            tag = "notes";
-        } else if (id == R.id.nav_settings) {
-            fragment = new SettingsFragment();
-            tag = "settings";
-        } else if (id == R.id.nav_about) {
-            fragment = new AboutFragment();
-            tag = "about";
-        }
-
-        if (fragment != null) {
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, fragment, tag)
-                    .commit();
-
-            if (getSupportActionBar() != null) {
-                getSupportActionBar().setTitle(item.getTitle());
-            }
-        }
-
-        drawerLayout.closeDrawer(GravityCompat.START);
-        return true;
-    }
+    // Navigation selection is handled by BaseNavigationActivity
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

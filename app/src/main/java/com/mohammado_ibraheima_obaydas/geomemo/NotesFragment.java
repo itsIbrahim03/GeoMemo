@@ -1,4 +1,4 @@
-package com.example.geomemo;
+package com.mohammado_ibraheima_obaydas.geomemo;
 
 import android.content.Context;
 import android.content.Intent;
@@ -71,9 +71,11 @@ public class NotesFragment extends Fragment {
 
         // Setup RecyclerView
         memoList = new ArrayList<>();
+        MemoAdapter.OnMemoClickListener clickListener = null;
         if (getActivity() instanceof MemoAdapter.OnMemoClickListener) {
-            memoAdapter = new MemoAdapter(memoList, (MemoAdapter.OnMemoClickListener) getActivity());
+            clickListener = (MemoAdapter.OnMemoClickListener) getActivity();
         }
+        memoAdapter = new MemoAdapter(memoList, clickListener);
         recyclerMemos.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerMemos.setAdapter(memoAdapter);
 

@@ -35,7 +35,7 @@
             android:layout_marginTop="4dp"
             android:textSize="12sp"
             android:textColor="@color/text_secondary"
-            android:text="com.example.geomemo" />
+            android:text="com.mohammado_ibraheima_obaydas.geomemo" />
 
         <View
             android:layout_width="match_parent"
@@ -74,7 +74,7 @@
                     android:layout_marginTop="6dp"
                     android:textSize="14sp"
                     android:textColor="@color/text_primary"
-                    android:text="Mohammad Othman (211354931)\nIbraheim Amo (213942972)\nObaidah Sarahneh (213279680)" />
+                    android:text="Mohammad Othman (211354931)\nIbrahim Amo (213942972)\nObayda Sarahnah (086972312)" />
 
 
 
@@ -115,6 +115,43 @@
                     android:textColor="@color/text_primary"
                     android:lineSpacingMultiplier="1.2"
                     android:text="Android Version: \nAPI Level: \nDevice Model: " />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardBackgroundColor="@color/card_background"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/divider_color">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SUBMISSION DATE"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_secondary"
+                    android:letterSpacing="0.1" />
+
+                <TextView
+                    android:id="@+id/about_submission_date"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:text="28/06/2026" />
 
             </LinearLayout>
 

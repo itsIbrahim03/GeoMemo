@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.example.geomemo'
+    namespace 'com.mohammado_ibraheima_obaydas.geomemo'
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.geomemo"
+        applicationId "com.mohammado_ibraheima_obaydas.geomemo"
         minSdk 26
         targetSdk 36
         versionCode 1

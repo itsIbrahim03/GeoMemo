@@ -52,7 +52,7 @@
                 android:contentDescription="@string/app_name" />
 
             <!-- Custom loading circle that covers the center red/brown circle and animate-loads it -->
-            <com.example.geomemo.PointerCircleView
+            <com.mohammado_ibraheima_obaydas.geomemo.PointerCircleView
                 android:id="@+id/splash_pointer_overlay"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
@@ -73,9 +73,35 @@
         android:textSize="44sp"
         android:textStyle="bold"
         android:fontFamily="sans-serif-medium"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/text_student_info"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/logo_container" />
 
+    <TextView
+        android:id="@+id/text_student_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:textColor="@color/splash_tagline_color"
+        android:textSize="11sp"
+        android:gravity="center"
+        app:layout_constraintBottom_toTopOf="@+id/text_submission_date"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/text_submission_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:textColor="@color/splash_tagline_color"
+        android:textSize="11sp"
+        android:gravity="center"
+        android:text="@string/submission_date"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
+

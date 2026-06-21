@@ -1,4 +1,4 @@
-package com.example.geomemo;
+package com.mohammado_ibraheima_obaydas.geomemo;
 
 import android.content.Intent;
 import android.os.Build;
@@ -40,6 +40,20 @@ public class SplashActivity extends AppCompatActivity {
         View pointerContainer = findViewById(R.id.splash_pointer_container);
         PointerCircleView pointerOverlay = findViewById(R.id.splash_pointer_overlay);
         TextView appTitle = findViewById(R.id.splash_title);
+        TextView studentInfo = findViewById(R.id.text_student_info);
+        TextView submissionDate = findViewById(R.id.text_submission_date);
+
+        // Format student info exactly as in About page
+        String[] names = getString(R.string.student_names).split(",");
+        String[] ids = getString(R.string.student_ids).split(",");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(names.length, ids.length); i++) {
+            sb.append(names[i].trim()).append(" (").append(ids[i].trim()).append(")");
+            if (i < Math.min(names.length, ids.length) - 1) {
+                sb.append("\n");
+            }
+        }
+        studentInfo.setText(sb.toString());
 
         // Initial state: everything hidden
         paper.setAlpha(0f);
@@ -49,6 +63,8 @@ public class SplashActivity extends AppCompatActivity {
         pointerOverlay.setAlpha(1f);    // overlay starts fully visible (covers the red/brown circle with white)
         pointerOverlay.setProgress(0f); // progress starts at 0 (meaning solid white circle)
         appTitle.setAlpha(0f);
+        studentInfo.setAlpha(0f);
+        submissionDate.setAlpha(0f);
 
         paper.post(() -> {
             // Step 1: Paper slides in from the left (0ms - 600ms)
@@ -86,11 +102,19 @@ public class SplashActivity extends AppCompatActivity {
                                                             progressAnimator.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
                                                             progressAnimator.start();
 
-                                                            // Step 4: Fade in title
-                                                            appTitle.animate()
-                                                                    .alpha(1f)
-                                                                    .setDuration(500)
-                                                                    .start();
+                                                             // Step 4: Fade in title, student info, and date
+                                                             appTitle.animate()
+                                                                     .alpha(1f)
+                                                                     .setDuration(500)
+                                                                     .start();
+                                                             studentInfo.animate()
+                                                                     .alpha(1f)
+                                                                     .setDuration(500)
+                                                                     .start();
+                                                             submissionDate.animate()
+                                                                     .alpha(1f)
+                                                                     .setDuration(500)
+                                                                     .start();
                                                         })
                                                         .start();
                                             })

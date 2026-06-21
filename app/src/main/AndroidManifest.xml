@@ -45,6 +45,21 @@
             android:exported="false"
             android:theme="@style/Theme.GeoMemo.AddMemo" />
 
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GeoMemo.AppBar" />
+
+        <activity
+            android:name=".NotesActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GeoMemo.AppBar" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GeoMemo.AppBar" />
+
 
 
         <service

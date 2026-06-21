@@ -1,4 +1,4 @@
-package com.example.geomemo;
+package com.mohammado_ibraheima_obaydas.geomemo;
 
 public class Memo {
     private long id;

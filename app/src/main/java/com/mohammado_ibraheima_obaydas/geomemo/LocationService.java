@@ -1,4 +1,4 @@
-package com.example.geomemo;
+package com.mohammado_ibraheima_obaydas.geomemo;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -131,8 +131,9 @@ public class LocationService extends Service implements LocationListener {
     private void sendProximityNotification(Memo memo) {
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.putExtra("memo_id", memo.getId());
         PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, (int) memo.getId(), intent, PendingIntent.FLAG_IMMUTABLE
+                this, (int) memo.getId(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID_PROXIMITY)

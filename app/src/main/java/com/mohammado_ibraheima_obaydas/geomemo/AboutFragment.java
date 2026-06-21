@@ -1,4 +1,4 @@
-package com.example.geomemo;
+package com.mohammado_ibraheima_obaydas.geomemo;
 
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +22,7 @@ public class AboutFragment extends Fragment {
         TextView aboutAppId = view.findViewById(R.id.about_app_id);
         TextView aboutStudents = view.findViewById(R.id.about_students);
         TextView aboutSystem = view.findViewById(R.id.about_system);
+        TextView aboutSubmissionDate = view.findViewById(R.id.about_submission_date);
 
         aboutAppId.setText(requireContext().getPackageName());
         String[] names = getString(R.string.student_names).split(",");
@@ -39,6 +40,8 @@ public class AboutFragment extends Fragment {
                 + "API Level: " + Build.VERSION.SDK_INT + "\n"
                 + "Device Model: " + Build.MODEL;
         aboutSystem.setText(systemInfo);
+        
+        aboutSubmissionDate.setText(getString(R.string.submission_date));
 
         return view;
     }
