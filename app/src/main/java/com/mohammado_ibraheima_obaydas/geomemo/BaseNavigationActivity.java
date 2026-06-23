@@ -17,8 +17,10 @@ public abstract class BaseNavigationActivity extends AppCompatActivity
 
     protected DrawerLayout drawerLayout;
     protected NavigationView navigationView;
+    protected int currentCheckedItemId;
 
     protected void setupNavigation(int checkedItemId) {
+        this.currentCheckedItemId = checkedItemId;
         Toolbar toolbar = findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
 
@@ -48,6 +50,17 @@ public abstract class BaseNavigationActivity extends AppCompatActivity
             menuItem.setChecked(true);
             if (getSupportActionBar() != null) {
                 getSupportActionBar().setTitle(menuItem.getTitle());
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (navigationView != null) {
+            MenuItem menuItem = navigationView.getMenu().findItem(currentCheckedItemId);
+            if (menuItem != null) {
+                menuItem.setChecked(true);
             }
         }
     }
