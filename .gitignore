@@ -1,5 +1,50 @@
-# --- IDE Files (IntelliJ / Android Studio) ---
+# ==========================================
+# CUSTOM PROJECT FILES (GeoMemo Specific)
+# ==========================================
+*.db
+*.db-journal
+*.db-wal
+geomemo.db
+screen.png
+
+# ==========================================
+# ANDROID STUDIO & GRADLE
+# ==========================================
+# Built application files
+*.apk
+*.ap_
+*.aab
+*.aar
+
+# Gradle files
+.gradle/
+build/
+/*/build/
+/*/*/build
+/*/*/production
+
+# NDK / Native Builds
+.externalNativeBuild/
+.cxx/
+obj/
+
+# Local configuration file (sdk path, etc)
+local.properties
+/*/local.properties
+
+# Keystore & Security
+*.jks
+*.keystore
+
+# Google Services (Uncomment if you want to ignore this, though usually you shouldn't unless it's open source)
+# google-services.json
+
+# ==========================================
+# INTELLIJ IDEA (IDE Files)
+# ==========================================
 *.iml
+*.ipr
+*.iws
 .idea/workspace.xml
 .idea/tasks.xml
 .idea/caches/
@@ -9,36 +54,62 @@
 .idea/assetWizardSettings.xml
 .idea/shelf/
 .idea/nav/
-
-# --- Build Outputs ---
-/build/
-/*/build/
+.idea/.name
+.idea/compiler.xml
+.idea/copyright/profiles_settings.xml
+.idea/encodings.xml
+.idea/misc.xml
+.idea/scopes/scope_settings.xml
+.idea/dictionaries/
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+.idea/datasources.xml
+.idea/dataSources.ids
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+.idea/gradle.xml
+.idea/jarRepositories.xml
+.navigation/
+captures/
 /captures/
-.externalNativeBuild/
-.cxx/
-*.apk
-*.aar
+out/
+/out/
+/*/out/
 
-# --- Local Configurations & SDK Paths ---
-.gradle/
-/local.properties
-local.properties
-
-# --- OS Specific Files ---
-.DS_Store
-Thumbs.db
-
-# --- Databases and Testing Files (GeoMemo Specific) ---
-*.db
-*.db-journal
-*.db-wal
-geomemo.db
-screen.png
-
-# --- Security and Keys ---
-*.jks
-*.keystore
-
-# --- Log Files ---
+# ==========================================
+# JAVA, LINUX, & WINDOWS SYSTEM FILES
+# ==========================================
+*.class
 *.log
 *.stacktrace
+*.jar
+*.war
+*.zip
+*.tar.gz
+*.rar
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+.DS_Store
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+*.swp
+
+# ==========================================
+# EXCEPTIONS (Files we explicitly WANT to keep)
+# ==========================================
+!/gradle/wrapper/gradle-wrapper.jar
